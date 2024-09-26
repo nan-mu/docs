@@ -2,7 +2,7 @@
 
 整理并保存互联网上找到的学习只用文章。
 
-如果涉及版权侵犯，请邮件至 mu.nan.11@outlook.com。
+如果涉及版权侵犯，请直接issue或者邮件至 mu.nan.11@outlook.com。
 
 也欢迎访问博客网站 nan-mu.asia。
 
