@@ -5,3 +5,11 @@
 如果涉及版权侵犯，请邮件至 mu.nan.11@outlook.com。
 
 也欢迎访问博客网站 nan-mu.asia。
+
+## 已有文档列表
+
+### `eBPF`
+
+一种能将代码嵌入到内核的各个子系统中的解决方案。
+
+from [kernel_new_features](https://github.com/0voice/kernel_new_features)
