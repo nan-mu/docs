@@ -78,9 +78,14 @@ BPF 程序开始执行时，`r1` 寄存器中存放的是程序的上下文，�
 
 不同类型的 BPF 程序能够使用的辅助函数可能是不同的，例如 eBPF 程序类型为`BPF_PROG_TYPE_SOCKET_FILTER`的只能使用下面几种辅助函数：
 
-| `1 2 3 4 5 6 ` | `BPF_FUNC_skb_load_bytes() BPF_FUNC_skb_load_bytes_relative() BPF_FUNC_get_socket_cookie() BPF_FUNC_get_socket_uid() BPF_FUNC_perf_event_output() Base functions ` |
-| -------------- | ------------------------------------------------------------ |
-|                |                                                              |
+```
+BPF_FUNC_skb_load_bytes()
+BPF_FUNC_skb_load_bytes_relative()
+BPF_FUNC_get_socket_cookie()
+BPF_FUNC_get_socket_uid()
+BPF_FUNC_perf_event_output()
+```
+
 
 受于篇幅限制，文章只举了几个简单的例子，详细的辅助函数分类与关系可以参考 BCC 的文档 *[bcc/docs/kernel-versions](https://github.com/iovisor/bcc/blob/master/docs/kernel-versions.md)* 。
 
@@ -96,23 +101,49 @@ eBPF 映射（eBPF Maps）是**驻留在内核空间中的高效键值仓库**�
 
 Map 为上层程序提供了一层基础数据结构的映射，现在有二十几种数据类型，均由 core kernel 实现，因此我们无法增添或修改数据结构。Map 分为通用 Map 和非通用 Map 两种。下面列出了几个通用 Map 的类型：
 
-| `1 2 3 4 5 6 7 ` | `// 通用 MAP BPF_MAP_TYPE_HASH BPF_MAP_TYPE_ARRAY BPF_MAP_TYPE_LRU_HASH BPF_MAP_TYPE_PERCPU_HASH BPF_MAP_TYPE_PERCPU_ARRAY BPF_MAP_TYPE_LRU_PERCPU_HASH ` |
-| ---------------- | ------------------------------------------------------------ |
-|                  |                                                              |
+```
+// 通用 MAP 
+BPF_MAP_TYPE_HASH
+BPF_MAP_TYPE_ARRAY
+BPF_MAP_TYPE_LRU_HASH
+BPF_MAP_TYPE_PERCPU_HASH
+BPF_MAP_TYPE_PERCPU_ARRAY
+BPF_MAP_TYPE_LRU_PERCPU_HASH
+```
 
 通用 Map 提供了哈希表、数组、LRU 等数据结构的映射，除此之外，还提供了对应的单 CPU 映射类型：我们可以给类型映射分配 CPU，每个 CPU 会看到自己独立的映射版本，这样更有利于高性能查找和指标聚合。
 
 eBPF 程序可以通过辅助函数读写 Map，用户态程序也可以通过`bpf()`系统调用读写 Map，下面列出了所有对通用 Map 进行操作的函数和命令：
 
-| ` 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 ` | `// Map 相关的辅助函数 BPF_FUNC_map_lookup_elem()		// 查找元素 BPF_FUNC_map_update_elem()		// 更新或创建元素 BPF_FUNC_map_delete_elem()		// 删除元素 BPF_FUNC_map_peek_elem() BPF_FUNC_map_pop_elem() BPF_FUNC_map_push_elem() // bpf() 系统调用可操作的 API BPF_MAP_LOOKUP_ELEM, BPF_MAP_UPDATE_ELEM, BPF_MAP_DELETE_ELEM, BPF_MAP_GET_NEXT_KEY,			// 用于迭代查询 BPF_MAP_LOOKUP_AND_DELETE_ELEM,	// 查找并删除 BPF_MAP_LOOKUP_BATCH,			// 对应操作的批量处理 BPF_MAP_LOOKUP_AND_DELETE_BATCH, BPF_MAP_UPDATE_BATCH, BPF_MAP_DELETE_BATCH, ` |
-| --------------------------------------------- | ------------------------------------------------------------ |
-|                                               |                                                              |
+```
+// Map 相关的辅助函数
+BPF_FUNC_map_lookup_elem()// 查找元素
+BPF_FUNC_map_update_elem()// 更新或创建元素
+BPF_FUNC_map_delete_elem()// 删除元素
+BPF_FUNC_map_peek_elem()
+BPF_FUNC_map_pop_elem()
+BPF_FUNC_map_push_elem()
+// bpf() 系统调用可操作的
+API BPF_MAP_LOOKUP_ELEM
+BPF_MAP_UPDATE_ELEM
+BPF_MAP_DELETE_ELEM
+BPF_MAP_GET_NEXT_KEY //用于迭代查询
+BPF_MAP_LOOKUP_AND_DELETE_ELEM // 查找并删除
+BPF_MAP_LOOKUP_BATCH // 对应操作的批量处理
+BPF_MAP_LOOKUP_AND_DELETE_BATCH
+BPF_MAP_UPDATE_BATCH
+BPF_MAP_DELETE_BATCH
+```
 
 数据操作并不复杂，从函数名称可以看出它的作用，用户态`bpf()`系统调用则又封装了一些高级操作，方便进行批量数据处理。
 
-| `1 2 3 4 5 ` | `// 非通用 MAP BPF_MAP_TYPE_PROG_ARRAY BPF_MAP_TYPE_ARRAY_OF_MAPS BPF_MAP_TYPE_HASH_OF_MAPS BPF_MAP_TYPE_CGROUP_ARRAY ` |
-| ------------ | ------------------------------------------------------------ |
-|              |                                                              |
+```
+// 非通用 MAP
+BPF_MAP_TYPE_PROG_ARRAY
+BPF_MAP_TYPE_ARRAY_OF_MAPS
+BPF_MAP_TYPE_HASH_OF_MAPS
+BPF_MAP_TYPE_CGROUP_ARRAY
+```
 
 上面列出了几个非通用 Map，它们只用于特定的场景，例如`BPF_MAP_TYPE_PROG_ARRAY` 用于保存其它的 eBPF 程序的引用，可以与尾部调用配合实现程序间的跳转；`BPF_MAP_TYPE_ARRAY_OF_MAPS` 和 `BPF_MAP_TYPE_HASH_OF_MAPS` 都用于持有其他 Map 的指针，这样整个 Map 就可以在运行时实现原子替换，`BPF_MAP_TYPE_CGROUP_ARRAY`则用于保存对 cgroup 的引用。
 
@@ -151,9 +182,24 @@ eBPF 提供的探针分为两种：
 
 代码中的 中`do_sys_execve()`函数用于获取内核正在运行的命令名，并打印至控制台；然后我们利用 BCC 提供的 bpf.attach_kprobe() 方法将`do_sys_execve()`函数和`execve()`系统调用绑定起来。运行这段程序将会看到，每当内核执行`execve()`系统调用时都会在控制台打印相应的命令名称。
 
-| ` 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 ` | `from bcc import BPF bpf_source = """ #include <uapi/linux/ptrace.h> int do_sys_execve(struct pt_regs *ctx) {  char comm[16];  bpf_get_current_comm(&comm, sizeof(comm));  bpf_trace_printk("executing program: %s\\n", comm);  return 0; } """ bpf = BPF(text=bpf_source) execve_function = bpf.get_syscall_fnname("execve") bpf.attach_kprobe(event=execve_function, fn_name="do_sys_execve") bpf.trace_print() ` |
-| --------------------------------------------- | ------------------------------------------------------------ |
-|                                               |                                                              |
+```python
+from bcc import BPF
+
+bpf_source = """ 
+    #include <uapi/linux/ptrace.h> 
+    int do_sys_execve(struct pt_regs *ctx) {
+        char comm[16];
+        bpf_get_current_comm(&comm, sizeof(comm));
+        bpf_trace_printk("executing program: %s\\n", comm);
+        return 0;
+    } 
+"""
+
+bpf = BPF(text=bpf_source)
+execve_function = bpf.get_syscall_fnname("execve")
+bpf.attach_kprobe(event=execve_function, fn_name="do_sys_execve")
+bpf.trace_print()
+```
 
 需要注意的是，内核探针没有稳定的应用程序二进制接口(ABI)，因此在不同的内核版本中同样的程序代码可能无法工作。
 
@@ -163,15 +209,38 @@ eBPF 提供的探针分为两种：
 
 在 Linux 上每个跟踪点都对应一个`/sys/kernel/debug/tracing/events`条目。例如，查看网络相关的追踪点：
 
-| ` 1 2 3 4 5 6 7 8 9 10 11 ` | `# sudo ls -la /sys/kernel/debug/tracing/events/net # 篇幅限制删减了部分追踪点 total 0 drwxr-xr-x  2 root root 0 Nov 20 21:00 net_dev_queue drwxr-xr-x  2 root root 0 Nov 20 21:00 net_dev_start_xmi drwxr-xr-x  2 root root 0 Nov 20 21:00 netif_receive_skb drwxr-xr-x  2 root root 0 Nov 20 21:00 netif_receive_skb_entry drwxr-xr-x  2 root root 0 Nov 20 21:00 netif_receive_skb_exit drwxr-xr-x  2 root root 0 Nov 20 21:00 netif_rx drwxr-xr-x  2 root root 0 Nov 20 21:00 netif_rx_entry drwxr-xr-x  2 root root 0 Nov 20 21:00 netif_rx_exit ` |
-| --------------------------- | ------------------------------------------------------------ |
-|                             |                                                              |
+```shell
+# sudo ls -la /sys/kernel/debug/tracing/events/net
+# 篇幅限制删减了部分追踪点
+total 0 
+drwxr-xr-x  2 root root 0 Nov 20 21:00 net_dev_queue
+drwxr-xr-x  2 root root 0 Nov 20 21:00 net_dev_start_xmi
+drwxr-xr-x  2 root root 0 Nov 20 21:00 netif_receive_skb
+drwxr-xr-x  2 root root 0 Nov 20 21:00 netif_receive_skb_entry
+drwxr-xr-x  2 root root 0 Nov 20 21:00 netif_receive_skb_exit
+drwxr-xr-x  2 root root 0 Nov 20 21:00 netif_rx
+drwxr-xr-x  2 root root 0 Nov 20 21:00 netif_rx_entry
+drwxr-xr-x  2 root root 0 Nov 20 21:00 netif_rx_exit
+```
 
 下面的示例中，我们将 eBPF 程序绑定到`net:netif_rx`追踪点上，并在控制台打印出调用程序名称。
 
-| ` 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 ` | `from bcc import BPF bpf_source = """ int trace_netif_rx(void *ctx) {  char comm[16];  bpf_get_current_comm(&comm, sizeof(comm));   bpf_trace_printk("%s is doing netif_rx", comm);  return 0; } """ bpf = BPF(text = bpf_source) bpf.attach_tracepoint(tp = "net:netif_rx", fn_name = "trace_netif_rx") bpf.trace_print() ` |
-| --------------------------------------- | ------------------------------------------------------------ |
-|                                         |                                                              |
+```python
+from bcc import BPF
+
+bpf_source = """
+    int trace_netif_rx(void *ctx) {
+        char comm[16];
+        bpf_get_current_comm(&comm, sizeof(comm));
+        bpf_trace_printk("%s is doing netif_rx", comm);
+        return 0;
+    }
+"""
+
+bpf = BPF(text = bpf_source)
+bpf.attach_tracepoint(tp = "net:netif_rx", fn_name = "trace_netif_rx")
+bpf.trace_print()
+```
 
 #### 网络
 
