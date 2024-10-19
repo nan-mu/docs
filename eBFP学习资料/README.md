@@ -37,3 +37,8 @@
 >原文链接：https://wingsxdu.com/posts/linux/ebpf/
 >
 >作者：[beihai](https://wingsxdu.com/)
+
+## 《aya-rs 开发相关》
+>原文链接：待补充
+>
+>作者：[我自己](https://nan-mu.asia)
